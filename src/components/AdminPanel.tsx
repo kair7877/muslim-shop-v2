@@ -8,6 +8,13 @@ import { Product, Category, Order, StoreSettings, Language, OrderStatus } from '
 import { translations, getOrderStatusLabel } from '../translations';
 import { formatTenge, formatPhone } from '../utils/formatters';
 import { compressImage } from '../utils/imageCompressor';
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+
+// Fixed technical login used only to talk to Firebase Auth behind the scenes.
+// You (the shop owner) set the matching password once in the Firebase Console
+// under Authentication -> Users. The PIN field below IS that password.
+const ADMIN_EMAIL = 'owner@muslimshop.internal';
 
 interface AdminPanelProps {
   products: Product[];
@@ -50,6 +57,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   });
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
 
   // Active Tab: products | categories | orders | settings | database
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders' | 'settings' | 'database'>('products');
@@ -68,18 +76,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [settingsSavedNotice, setSettingsSavedNotice] = useState(false);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === settings.adminPin || pinInput === '1234') {
+    setPinLoading(true);
+    try {
+      // This is the real check now — it hits Firebase Auth, not just local state.
+      // Firestore rules require this sign-in to succeed before any write is allowed.
+      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pinInput);
       setIsAuthenticated(true);
       sessionStorage.setItem('ms_admin_auth', 'true');
       setPinError(false);
-    } else {
+    } catch (err) {
       setPinError(true);
+    } finally {
+      setPinLoading(false);
     }
   };
 
   const handleLogout = () => {
+    signOut(auth).catch(() => {});
     setIsAuthenticated(false);
     sessionStorage.removeItem('ms_admin_auth');
     setPinInput('');
@@ -1272,3 +1287,4 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     </div>
   );
 };
+
