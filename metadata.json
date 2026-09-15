@@ -1,0 +1,6 @@
+{
+  "name": "MUSLIM SHOP",
+  "description": "Премиальный интернет-магазин товаров для здоровья, красоты и мусульманских товаров в Атырау",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
